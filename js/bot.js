@@ -1,12 +1,24 @@
 // --- Bot Logic ---
-// Removed `let botDifficultyLevel = 'medium';` from here as it's now managed in app.js
+// botDifficultyLevel is now managed in app.js and passed as an argument to getBotMove.
 
+/**
+ * Placeholder function for setting bot difficulty.
+ * The actual difficulty is now passed directly to `getBotMove`.
+ * @param {string} level - The difficulty level ('medium', 'high', 'pro').
+ */
 function setBotDifficulty(level) {
     // This function can be removed if not needed, as difficulty is passed directly to getBotMove
     console.log("Bot difficulty (set internally in bot.js if needed, but app.js controls now):", level);
 }
 
-// Modified getBotMove to accept botDifficultyLevel as an argument
+/**
+ * Determines the bot's next move based on the current board state and difficulty.
+ * Includes a slight delay for a more realistic feel.
+ * @param {Array<string|null>} currentBoard - The current state of the Tic Tac Toe board.
+ * @param {string} botSymbol - The symbol the bot is playing ('X' or 'O').
+ * @param {string} difficultyLevel - The chosen difficulty level ('medium', 'high', 'pro').
+ * @returns {Promise<number>} A promise that resolves with the index of the bot's chosen move.
+ */
 function getBotMove(currentBoard, botSymbol, difficultyLevel) {
     // Add a slight delay for realism
     return new Promise(resolve => {
@@ -31,7 +43,13 @@ function getBotMove(currentBoard, botSymbol, difficultyLevel) {
 
 // --- Difficulty Level Strategies ---
 
-// Medium: Random move, but will try to win if possible, or block if player is about to win.
+/**
+ * Finds a reasonable move for the bot (Medium difficulty).
+ * Prioritizes winning, then blocking the opponent, then a random available spot.
+ * @param {Array<string|null>} board - The current board state.
+ * @param {string} botSymbol - The bot's symbol.
+ * @returns {number} The index of the chosen move, or -1 if no move is found (shouldn't happen in an active game).
+ */
 function findRandomReasonableMove(board, botSymbol) {
     const opponentSymbol = botSymbol === 'X' ? 'O' : 'X';
 
@@ -54,8 +72,13 @@ function findRandomReasonableMove(board, botSymbol) {
     return -1; // Should not happen if game isn't over
 }
 
-// High: More strategic than medium. Prioritizes center, then corners, then sides.
-// Will always take a win or block an opponent's win.
+/**
+ * Finds a strategic move for the bot (High difficulty).
+ * Prioritizes winning, then blocking, then center, then corners, then sides.
+ * @param {Array<string|null>} board - The current board state.
+ * @param {string} botSymbol - The bot's symbol.
+ * @returns {number} The index of the chosen move, or -1 if no move is found.
+ */
 function findStrategicMove(board, botSymbol) {
     const opponentSymbol = botSymbol === 'X' ? 'O' : 'X';
 
@@ -87,14 +110,19 @@ function findStrategicMove(board, botSymbol) {
 }
 
 
-// Helper function to find if a player can win in the next move
+/**
+ * Helper function to find if a player can win in the next move.
+ * @param {Array<string|null>} board - The current board state.
+ * @param {string} playerSymbol - The symbol of the player to check for a win.
+ * @returns {number} The index of the winning move, or -1 if no immediate win is found.
+ */
 function findWinningMove(board, playerSymbol) {
     for (let i = 0; i < board.length; i++) {
         if (!board[i]) { // If cell is empty
-            board[i] = playerSymbol; // Try placing the symbol
-            // Use checkWin from app.js (assuming it's globally accessible due to script order)
+            board[i] = playerSymbol; // Temporarily try placing the symbol
+            // checkWin and isBoardFull are assumed to be globally accessible from app.js
             if (checkWin(board, playerSymbol).isWin) {
-                board[i] = null; // Reset the cell
+                board[i] = null; // Reset the cell before returning
                 return i; // This is a winning move
             }
             board[i] = null; // Reset the cell
@@ -104,22 +132,32 @@ function findWinningMove(board, playerSymbol) {
 }
 
 
-// --- Pro Level: Minimax Algorithm (Simplified) ---
+// --- Pro Level: Minimax Algorithm ---
+/**
+ * Finds the best move for the bot using the Minimax algorithm.
+ * @param {Array<string|null>} currentBoard - The current board state.
+ * @param {string} botSymbol - The bot's symbol.
+ * @returns {number} The index of the best move.
+ */
 function findBestMoveMinimax(currentBoard, botSymbol) {
     let bestScore = -Infinity;
     let move = -1;
     const opponentSymbol = botSymbol === 'X' ? 'O' : 'X';
 
-    // If the board is empty or nearly empty, pick a strategic first move to speed up/simplify
+    // Optimization for early game to avoid deep minimax calculations
     const emptyCells = currentBoard.filter(cell => cell === null).length;
-    if (emptyCells === 9 || emptyCells === 8) { // First or second move of the game
-        if (!currentBoard[4]) return 4; // Take center
+    if (emptyCells === 9) { // First move of the game
+        return 4; // Always take the center
+    }
+    if (emptyCells === 8) { // Second move of the game
+        if (currentBoard[4] === null) return 4; // Take center if available
         const corners = [0, 2, 6, 8];
         const availableCorners = corners.filter(index => !currentBoard[index]);
         if (availableCorners.length > 0) {
-            return availableCorners[Math.floor(Math.random() * availableCorners.length)];
+            return availableCorners[Math.floor(Math.random() * availableCorners.length)]; // Take a random corner
         }
     }
+
 
     for (let i = 0; i < currentBoard.length; i++) {
         if (!currentBoard[i]) { // If cell is available
@@ -132,10 +170,7 @@ function findBestMoveMinimax(currentBoard, botSymbol) {
             }
         }
     }
-      // If minimax doesn't find a definitive best move (e.g., multiple moves with same score, or very early game)
-      // fall back to strategic or random reasonable move to make it less predictable or to handle edge cases.
-      // This part might not be strictly necessary for minimax if it always finds *a* best move,
-      // but it can add a touch of "humanity" or prevent a bug if minimax fails in an edge case.
+    // Fallback to strategic move if minimax somehow doesn't find a move (edge case, shouldn't happen with full minimax)
     if (move === -1) {
         console.log("Minimax couldn't decide, using strategic fallback.");
         return findStrategicMove(currentBoard, botSymbol);
@@ -143,6 +178,15 @@ function findBestMoveMinimax(currentBoard, botSymbol) {
     return move;
 }
 
+/**
+ * The core Minimax algorithm function.
+ * @param {Array<string|null>} board - The current board state.
+ * @param {number} depth - The current depth of the recursion tree.
+ * @param {boolean} isMaximizingPlayer - True if it's the maximizing player's turn (bot), false for minimizing (opponent).
+ * @param {string} botSymbol - The bot's symbol.
+ * @param {string} opponentSymbol - The opponent's symbol.
+ * @returns {number} The score of the current board state.
+ */
 function minimax(board, depth, isMaximizingPlayer, botSymbol, opponentSymbol) {
     const scores = {
         [botSymbol]: 10,     // Bot wins
@@ -150,6 +194,7 @@ function minimax(board, depth, isMaximizingPlayer, botSymbol, opponentSymbol) {
         'draw': 0            // Draw
     };
 
+    // Check for terminal states (win or draw)
     let winCheck = checkWin(board, botSymbol);
     if (winCheck.isWin) return scores[botSymbol] - depth; // Subtract depth to prefer faster wins
 
@@ -164,7 +209,7 @@ function minimax(board, depth, isMaximizingPlayer, botSymbol, opponentSymbol) {
             if (!board[i]) {
                 board[i] = botSymbol;
                 let score = minimax(board, depth + 1, false, botSymbol, opponentSymbol);
-                board[i] = null;
+                board[i] = null; // Undo the move
                 bestScore = Math.max(score, bestScore);
             }
         }
@@ -175,7 +220,7 @@ function minimax(board, depth, isMaximizingPlayer, botSymbol, opponentSymbol) {
             if (!board[i]) {
                 board[i] = opponentSymbol;
                 let score = minimax(board, depth + 1, true, botSymbol, opponentSymbol);
-                board[i] = null;
+                board[i] = null; // Undo the move
                 bestScore = Math.min(score, bestScore);
             }
         }
@@ -183,6 +228,5 @@ function minimax(board, depth, isMaximizingPlayer, botSymbol, opponentSymbol) {
     }
 }
 
-// Note: checkWin and isBoardFull are assumed to be accessible from app.js
-// due to the script loading order in index.html.
-// If bot.js were to be a completely independent module, these would need to be passed in or defined here.
+// Note: `checkWin` and `isBoardFull` are defined in `app.js` and are globally accessible
+// because `app.js` and `bot.js` are loaded after `ui.js` in `index.html`.

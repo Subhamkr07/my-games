@@ -1,4 +1,6 @@
 // --- DOM Elements ---
+// These are global variables that will be accessible to app.js and bot.js
+// because ui.js is loaded first in index.html.
 const screens = {
     welcome: document.getElementById('welcome-screen'),
     options: document.getElementById('options-screen'),
@@ -13,8 +15,8 @@ const buttons = {
     playWithBot: document.getElementById('play-with-bot-btn'),
     playWithFriend: document.getElementById('play-with-friend-btn'),
     startPlaying: document.getElementById('start-playing-btn'),
-    newGame: document.getElementById('new-game-btn'),
-    tryAgain: document.getElementById('try-again-btn'),
+    startNewGame: document.getElementById('start-new-game-btn'), // Renamed for clarity
+    playAgainSameMode: document.getElementById('play-again-same-mode-btn'), // Renamed for clarity
 };
 
 const selections = {
@@ -42,6 +44,10 @@ const resultElements = {
 };
 
 // --- UI Transition Functions ---
+/**
+ * Shows a specific screen and hides all others.
+ * @param {string} screenId - The ID of the screen to show (e.g., 'welcome', 'options', 'game').
+ */
 function showScreen(screenId) {
     for (const screenKey in screens) {
         screens[screenKey].classList.remove('active');
@@ -53,12 +59,20 @@ function showScreen(screenId) {
     }
 }
 
+/**
+ * Shows a specific popup.
+ * @param {string} popupId - The ID of the popup to show (e.g., 'result').
+ */
 function showPopup(popupId) {
     if (popupId && popups[popupId]) {
         popups[popupId].classList.add('active');
     }
 }
 
+/**
+ * Hides a specific popup.
+ * @param {string} popupId - The ID of the popup to hide (e.g., 'result').
+ */
 function hidePopup(popupId) {
     if (popupId && popups[popupId]) {
         popups[popupId].classList.remove('active');
@@ -66,21 +80,30 @@ function hidePopup(popupId) {
 }
 
 // --- Update UI Elements ---
+/**
+ * Updates the text content of the turn indicator.
+ * @param {string} message - The message to display (e.g., "Player X's Turn").
+ */
 function updateTurnIndicator(message) {
     gameElements.turnIndicator.textContent = message;
-    // Add animation for turn change if desired
-    gameElements.turnIndicator.style.animation = 'none';
-    setTimeout(() => {
-        gameElements.turnIndicator.style.animation = 'fadeIn 0.3s ease-out';
-    }, 10);
+    // Add a subtle animation for turn change
+    gameElements.turnIndicator.style.animation = 'none'; // Reset animation
+    void gameElements.turnIndicator.offsetWidth; // Trigger reflow
+    gameElements.turnIndicator.style.animation = 'fadeIn 0.3s ease-out'; // Apply new animation
 }
 
+/**
+ * Updates a specific cell on the Tic Tac Toe board with a symbol.
+ * Adds styling classes and an animation for placing the symbol.
+ * @param {number} index - The index of the cell (0-8).
+ * @param {string} symbol - The symbol to place ('X' or 'O').
+ */
 function updateCell(index, symbol) {
     const cell = gameElements.cells[index];
     if (cell) {
         cell.textContent = symbol;
-        cell.classList.add(symbol); // For X or O specific styling
-        // Add symbol placement animation
+        cell.classList.add(symbol); // Add 'X' or 'O' class for specific styling
+        // Apply placement animation
         cell.style.transform = 'scale(0.5)';
         cell.style.opacity = '0';
         setTimeout(() => {
@@ -91,42 +114,59 @@ function updateCell(index, symbol) {
     }
 }
 
+/**
+ * Resets the visual state of the Tic Tac Toe board cells.
+ * Clears symbols, removes styling classes, and hides result animations.
+ */
 function resetBoardUI() {
     gameElements.cells.forEach(cell => {
         cell.textContent = '';
         cell.classList.remove('X', 'O', 'win-cell');
         cell.style.backgroundColor = ''; // Reset background for win highlight
+        cell.style.transform = ''; // Clear any inline transform from animations
+        cell.style.opacity = '';   // Clear any inline opacity from animations
+        cell.style.transition = ''; // Clear any inline transition
     });
     resultElements.winnerAnimation.classList.add('hidden');
     resultElements.loserAnimation.classList.add('hidden');
-    buttons.tryAgain.classList.add('hidden');
-    buttons.newGame.textContent = "Start New Game";
+    // The visibility of playAgainSameMode and startNewGame buttons is now handled in endGame,
+    // so no explicit hide or text change is needed here.
 }
 
+/**
+ * Displays the game result message and appropriate animations/buttons in the popup.
+ * @param {string} message - The main message to display (e.g., "It's a Draw!").
+ * @param {boolean} isWinner - True if the human player won.
+ * @param {boolean} isLoser - True if the human player lost (only relevant for bot mode).
+ * @param {boolean} isDraw - True if the game is a draw.
+ */
 function displayResult(message, isWinner, isLoser, isDraw) {
     resultElements.message.textContent = message;
     resultElements.winnerAnimation.classList.toggle('hidden', !isWinner);
     resultElements.loserAnimation.classList.toggle('hidden', !isLoser);
 
-    if (isDraw) {
-        buttons.newGame.textContent = "Play Again"; // Or specific text for draw
-        buttons.tryAgain.classList.add('hidden');
-    } else if (isWinner) {
-        buttons.newGame.textContent = "Start New Game";
-        buttons.tryAgain.classList.add('hidden');
-    } else if (isLoser) {
-        buttons.tryAgain.classList.remove('hidden');
-        buttons.newGame.textContent = "Start New Game"; // Or change to "Main Menu"
-    }
+    // Logic for showing/hiding buttons is now handled externally in the endGame function in app.js
     showPopup('result');
 }
 
+/**
+ * Applies a visual highlight to the cells that form the winning combination.
+ * @param {number[]} winningCombination - An array of cell indices that form the win.
+ */
 function highlightWinningCells(winningCombination) {
     winningCombination.forEach(index => {
         gameElements.cells[index].classList.add('win-cell');
     });
 }
 
+/**
+ * Sets up the display for player names and symbols, primarily for 'friend' mode.
+ * @param {string} player1Symbol - Symbol for Player 1.
+ * @param {string} player2Symbol - Symbol for Player 2.
+ * @param {string} mode - The current game mode ('bot' or 'friend').
+ * @param {string} [p1Name="Player 1"] - Name for Player 1.
+ * @param {string} [p2Name="Player 2"] - Name for Player 2.
+ */
 function setupPlayerNamesUI(player1Symbol, player2Symbol, mode, p1Name = "Player 1", p2Name = "Player 2") {
     if (mode === 'friend') {
         gameElements.playerNamesDisplay.classList.remove('hidden');
@@ -139,5 +179,4 @@ function setupPlayerNamesUI(player1Symbol, player2Symbol, mode, p1Name = "Player
     }
 }
 
-// Initialize UI
-showScreen('welcome'); // Start with the welcome screen
+// Note: Initial screen display is handled by app.js's DOMContentLoaded listener.

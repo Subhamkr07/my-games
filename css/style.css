@@ -92,7 +92,7 @@ body {
     box-shadow: 0 3px 10px rgba(0, 0, 0, 0.2);
 }
 
-/* Selected Button Styling (NEW ADDITION) */
+/* Selected Button Styling */
 .btn.selected, .btn.selected-mode {
     background: linear-gradient(145deg, #56ab2f, #a8e063); /* Example selected color */
     color: white;
@@ -264,7 +264,7 @@ body {
   }
 }
 
-/* NEW ADDITION: Animation for invalid cell click */
+/* Animation for invalid cell click */
 @keyframes shakeInvalid {
   0%, 100% { transform: translateX(0); }
   25% { transform: translateX(-5px); }
