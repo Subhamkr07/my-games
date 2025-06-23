@@ -276,3 +276,25 @@ body {
 .hidden {
     display: none !important;
 }
+/* Splash screen styles */
+#logo-splash {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background-color: #000;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 2000;
+  opacity: 1;
+  transition: opacity 1s ease-out;
+}
+#logo-splash img {
+  max-width: 70vw;
+  max-height: 70vh;
+  opacity: 0;
+  transform: scale(0.3);
+  transition: all 0.8s ease-out;
+}

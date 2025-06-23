@@ -382,3 +382,22 @@ document.addEventListener('DOMContentLoaded', () => {
     initializeEventListeners(); // Set up all interactive elements
     showScreen('welcome');      // Ensure the welcome screen is shown first
 });
+// Splash animation logic
+document.addEventListener('DOMContentLoaded', () => {
+  const logoSplash = document.getElementById('logo-splash');
+  const logoImg = logoSplash?.querySelector('img');
+  if (!logoSplash || !logoImg) return;
+
+  setTimeout(() => {
+    logoImg.style.opacity = '1';
+    logoImg.style.transform = 'scale(1)';
+  }, 500);
+
+  setTimeout(() => {
+    logoSplash.style.opacity = '0';
+    setTimeout(() => {
+      logoSplash.style.display = 'none';
+      showScreen('welcome');
+    }, 1000);
+  }, 3000);
+});
